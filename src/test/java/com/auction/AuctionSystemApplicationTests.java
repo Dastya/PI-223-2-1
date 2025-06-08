@@ -1,10 +1,10 @@
-package com.auction.pi22321;
+package com.auction;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class Pi22321ApplicationTests {
+class AuctionSystemApplicationTests {
 
     @Test
     void contextLoads() {

@@ -1,13 +1,13 @@
-package com.auction.pi22321;
+package com.auction;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class Pi22321Application {
+public class AuctionSystemApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(Pi22321Application.class, args);
+        SpringApplication.run(AuctionSystemApplication.class, args);
     }
 
 }
