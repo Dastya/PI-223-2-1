@@ -1,183 +1,123 @@
 package com.auction;
 
-import com.auction.exception.UnauthorizedAccessException;
 import com.auction.model.*;
 import com.auction.service.IAuctionService;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Contact;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.info.License;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
 
 @EnableScheduling
 @SpringBootApplication
+@OpenAPIDefinition(
+    info = @Info(
+        title = "Auction System API",
+        version = "1.0",
+        description = "API for managing auctions, lots, bids, and users",
+        contact = @Contact(
+            name = "Admin",
+            email = "admin@auction.com"
+        ),
+        license = @License(
+            name = "Apache 2.0",
+            url = "http://www.apache.org/licenses/LICENSE-2.0"
+        )
+    ),
+    security = @SecurityRequirement(name = "basicAuth")
+)
 public class AuctionSystemApplication {
-    // Store user references for testing
-    private User admin;
-    private User manager;
-    private User registered;
-    private User guest;
 
     public static void main(String[] args) {
         SpringApplication.run(AuctionSystemApplication.class, args);
     }
 
     @Bean
-    public CommandLineRunner demo(IAuctionService auctionService) {
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+            .components(new Components()
+                .addSecuritySchemes("basicAuth",
+                    new SecurityScheme()
+                        .type(SecurityScheme.Type.HTTP)
+                        .scheme("basic")
+                )
+            );
+    }
+
+    @Bean
+    public CommandLineRunner demo(IAuctionService auctionService, PasswordEncoder passwordEncoder) {
         return args -> {
-            try {
-                setupUsers(auctionService);
-                testCategories(auctionService);
-                testAuctionsAndBids(auctionService);
-                testLotConfirmation(auctionService);
-                printStatistics(auctionService);
-            } catch (Exception e) {
-                System.err.println("Error during initialization: " + e.getMessage());
+            if (auctionService.getAllUsers().isEmpty()) {
+                initializeDemoData(auctionService, passwordEncoder);
             }
         };
     }
 
-    private void setupUsers(IAuctionService auctionService) {
-        admin = new User();
-        admin.setUsername("admin");
-        admin.setPassword("admin123");
-        admin.setRole(Role.ADMIN);
-        auctionService.addUser(admin);
-
-        manager = new User();
-        manager.setUsername("manager");
-        manager.setPassword("manager123");
-        manager.setRole(Role.MANAGER);
-        auctionService.addUser(manager);
-
-        registered = new User();
-        registered.setUsername("user");
-        registered.setPassword("user123");
-        registered.setRole(Role.REGISTERED);
-        auctionService.addUser(registered);
-
-        guest = new User();
-        guest.setUsername("guest");
-        guest.setPassword("guest123");
-        guest.setRole(Role.GUEST);
-        auctionService.addUser(guest);
-    }
-
-    private void testCategories(IAuctionService auctionService) {
-        System.out.println("\nTesting category creation:");
+    private void initializeDemoData(IAuctionService auctionService, PasswordEncoder passwordEncoder) {
+        // users
+        User admin = createUser("admin", "admin123", Role.ADMIN, passwordEncoder);
+        User manager = createUser("manager", "manager123", Role.MANAGER, passwordEncoder);
+        User registeredUser = createUser("user", "user123", Role.REGISTERED, passwordEncoder);
         
-        // Admin creates category
-        setCurrentUser(admin);
+        auctionService.addUser(admin);
+        auctionService.addUser(manager);
+        auctionService.addUser(registeredUser);
+
+        // categories
         Category electronics = new Category();
         electronics.setName("Electronics");
         auctionService.addCategory(electronics);
-        System.out.println("Admin successfully created category");
 
-        // Manager creates category
-        setCurrentUser(manager);
         Category books = new Category();
         books.setName("Books");
         auctionService.addCategory(books);
-        System.out.println("Manager successfully created category");
 
-        // Registered user tries to create category
-        try {
-            setCurrentUser(registered);
-            Category furniture = new Category();
-            furniture.setName("Furniture");
-            auctionService.addCategory(furniture);
-        } catch (UnauthorizedAccessException e) {
-            System.out.println("Registered user failed to create category (expected): " + e.getMessage());
-        }
+        // lots and auctions
+        createSampleLotAndAuction(auctionService, electronics, admin, "iPhone 14", "New, unopened", 1200.0);
+        createSampleLotAndAuction(auctionService, books, admin, "Rare Book Collection", "First editions", 500.0);
     }
 
-    private void testAuctionsAndBids(IAuctionService auctionService) {
-        System.out.println("\nTesting auction creation and bidding:");
+    private User createUser(String username, String password, Role role, PasswordEncoder passwordEncoder) {
+        User user = new User();
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setRole(role);
+        return user;
+    }
+
+    private void createSampleLotAndAuction(
+            IAuctionService auctionService, 
+            Category category, 
+            User owner, 
+            String title, 
+            String description, 
+            double startPrice) {
         
-        try {
-            setCurrentUser(admin);
-            List<Category> categories = auctionService.getAllCategories();
-            Category electronics = categories.isEmpty() ? null : categories.get(0);
-            
-            if (electronics != null) {
-                Lot iphone = new Lot();
-                iphone.setTitle("iPhone 14");
-                iphone.setDescription("New, unopened");
-                iphone.setStartPrice(BigDecimal.valueOf(1200.0));
-                iphone.setCategory(electronics);
-                iphone.setOwner(admin);
-                auctionService.addLot(iphone);
+        Lot lot = new Lot();
+        lot.setTitle(title);
+        lot.setDescription(description);
+        lot.setStartPrice(BigDecimal.valueOf(startPrice));
+        lot.setCategory(category);
+        lot.setOwner(owner);
+        auctionService.addLot(lot);
 
-                Auction auction = new Auction();
-                auction.setLot(iphone);
-                auction.setStartTime(LocalDateTime.now());
-                auction.setEndTime(LocalDateTime.now().plusDays(1));
-                auctionService.createAuction(auction);
-                System.out.println("Admin successfully created auction");
-
-                // Registered user places bid
-                setCurrentUser(registered);
-                Bid bid1 = new Bid();
-                bid1.setAmount(1250.0);
-                bid1.setTime(LocalDateTime.now());
-                bid1.setAuction(auction);
-                bid1.setBidder(registered);
-                auctionService.placeBid(bid1);
-                System.out.println("Registered user successfully placed bid");
-            } else {
-                System.out.println("No categories found to create auction");
-            }
-        } catch (Exception e) {
-            System.out.println("Error during auction and bid test: " + e.getMessage());
-        }
-    }
-
-    private void testLotConfirmation(IAuctionService auctionService) {
-        System.out.println("\nTesting lot confirmation:");
-        try {
-            setCurrentUser(registered);
-            List<Auction> auctions = auctionService.getAllAuctions();
-            if (!auctions.isEmpty()) {
-                Auction auction = auctions.get(0);
-                Bid winningBid = new Bid();
-                winningBid.setAmount(1500.0);
-                winningBid.setTime(LocalDateTime.now());
-                winningBid.setAuction(auction);
-                winningBid.setBidder(registered);
-                auctionService.placeBid(winningBid);
-
-                auction.setEndTime(LocalDateTime.now().minusMinutes(1));
-                auctionService.updateAuction(auction);
-                
-                Lot lot = auction.getLot();
-                System.out.println("Lot confirmation status: " + lot.isConfirmed());
-            } else {
-                System.out.println("No auctions found for confirmation test");
-            }
-        } catch (Exception e) {
-            System.out.println("Error during lot confirmation test: " + e.getMessage());
-        }
-    }
-
-    private void printStatistics(IAuctionService auctionService) {
-        System.out.println("\nFinal statistics:");
-        System.out.println("Users: " + auctionService.getAllUsers().size());
-        System.out.println("Categories: " + auctionService.getAllCategories().size());
-        System.out.println("Lots: " + auctionService.getAllLots().size());
-        System.out.println("Auctions: " + auctionService.getAllAuctions().size());
-        System.out.println("Bids: " + auctionService.getAllBids().size());
-    }
-
-    private void setCurrentUser(User user) {
-        SecurityContextHolder.getContext().setAuthentication(
-            new UsernamePasswordAuthenticationToken(user, null, Collections.emptyList())
-        );
+        Auction auction = new Auction();
+        auction.setLot(lot);
+        auction.setStartTime(LocalDateTime.now());
+        auction.setEndTime(LocalDateTime.now().plusDays(7));
+        auction.setCompleted(false);
+        auctionService.createAuction(auction);
     }
 }
