@@ -62,7 +62,7 @@ The **Auction System Application** is a web-based platform for managing auctions
 ### Clone the Repository
 
 ```bash 
-git clone <repository_url> cd <repository_folder>
+git clone git@github.com:Dastya/PI-223-2-1.git
 ```
 
 
