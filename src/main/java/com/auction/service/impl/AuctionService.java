@@ -220,7 +220,6 @@ public class AuctionService implements IAuctionService {
         uow.getBidRepository().deleteById(id);
     }
 
-    // Helper method to check and update auction status
     private void checkAndUpdateAuctionStatus(Auction auction) {
         if (LocalDateTime.now().isAfter(auction.getEndTime())) {
             auction.setCompleted(true);
