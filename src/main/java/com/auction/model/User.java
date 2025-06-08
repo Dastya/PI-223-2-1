@@ -3,6 +3,8 @@ package com.auction.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -14,5 +16,10 @@ public class User {
 
     private String username;
     private String password;
-    private String role; // ADMIN, MANAGER, REGISTERED, GUEST
+    
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
+    @OneToMany(mappedBy = "bidder")
+    private List<Bid> bids;
 }

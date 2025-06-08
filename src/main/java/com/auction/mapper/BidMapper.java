@@ -2,9 +2,13 @@ package com.auction.mapper;
 
 import com.auction.dto.BidDTO;
 import com.auction.model.Bid;
+import org.springframework.stereotype.Component;
 
+@Component
 public class BidMapper {
-    public static BidDTO toDTO(Bid bid) {
+
+    public BidDTO toDTO(Bid bid) {
+        if (bid == null) return null;
         return new BidDTO(
                 bid.getId(),
                 bid.getAmount(),
@@ -14,7 +18,8 @@ public class BidMapper {
         );
     }
 
-    public static Bid toEntity(BidDTO dto) {
+    public Bid toEntity(BidDTO dto) {
+        if (dto == null) return null;
         Bid bid = new Bid();
         bid.setId(dto.getId());
         bid.setAmount(dto.getAmount());

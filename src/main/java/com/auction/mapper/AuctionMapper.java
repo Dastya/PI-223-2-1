@@ -2,9 +2,13 @@ package com.auction.mapper;
 
 import com.auction.dto.AuctionDTO;
 import com.auction.model.Auction;
+import org.springframework.stereotype.Component;
 
+@Component
 public class AuctionMapper {
-    public static AuctionDTO toDTO(Auction auction) {
+
+    public AuctionDTO toDTO(Auction auction) {
+        if (auction == null) return null;
         return new AuctionDTO(
                 auction.getId(),
                 auction.getStartTime(),
@@ -14,7 +18,8 @@ public class AuctionMapper {
         );
     }
 
-    public static Auction toEntity(AuctionDTO dto) {
+    public Auction toEntity(AuctionDTO dto) {
+        if (dto == null) return null;
         Auction auction = new Auction();
         auction.setId(dto.getId());
         auction.setStartTime(dto.getStartTime());

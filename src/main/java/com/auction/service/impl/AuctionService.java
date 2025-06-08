@@ -1,57 +1,256 @@
 package com.auction.service.impl;
 
+import com.auction.exception.UnauthorizedAccessException;
 import com.auction.model.*;
 import com.auction.repository.UnitOfWork;
+import com.auction.security.SecurityContext;
 import com.auction.service.IAuctionService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class AuctionService implements IAuctionService {
-
     private final UnitOfWork uow;
+    private final SecurityContext securityContext;
 
-    // Category
-    public void addCategory(Category category) { uow.getCategoryRepository().save(category); }
-    public Category getCategoryById(Long id) { return uow.getCategoryRepository().findById(id).orElse(null); }
-    public List<Category> getAllCategories() { return uow.getCategoryRepository().findAll(); }
-    public void updateCategory(Category category) { uow.getCategoryRepository().save(category); }
-    public void deleteCategory(Long id) { uow.getCategoryRepository().deleteById(id); }
+    // Category operations
+    @Override
+    public void addCategory(Category category) {
+        User currentUser = securityContext.getCurrentUser();
+        if (currentUser.getRole() != Role.ADMIN && currentUser.getRole() != Role.MANAGER) {
+            throw new UnauthorizedAccessException("Only ADMIN and MANAGER can add categories");
+        }
+        uow.getCategoryRepository().save(category);
+    }
 
-    // User
-    public void addUser(User user) { uow.getUserRepository().save(user); }
-    public User getUserById(Long id) { return uow.getUserRepository().findById(id).orElse(null); }
-    public List<User> getAllUsers() { return uow.getUserRepository().findAll(); }
-    public void updateUser(User user) { uow.getUserRepository().save(user); }
-    public void deleteUser(Long id) { uow.getUserRepository().deleteById(id); }
+    @Override
+    public Category getCategoryById(Long id) {
+        return uow.getCategoryRepository().findById(id).orElse(null);
+    }
 
-    // Lot
-    public void addLot(Lot lot) { uow.getLotRepository().save(lot); }
-    public Lot getLotById(Long id) { return uow.getLotRepository().findById(id).orElse(null); }
-    public List<Lot> getAllLots() { return uow.getLotRepository().findAll(); }
-    public void updateLot(Lot lot) { uow.getLotRepository().save(lot); }
-    public void deleteLot(Long id) { uow.getLotRepository().deleteById(id); }
+    @Override
+    public List<Category> getAllCategories() {
+        return uow.getCategoryRepository().findAll();
+    }
 
-    // Auction
-    public void createAuction(Auction auction) { uow.getAuctionRepository().save(auction); }
-    public Auction getAuctionById(Long id) { return uow.getAuctionRepository().findById(id).orElse(null); }
-    public List<Auction> getAllAuctions() { return uow.getAuctionRepository().findAll(); }
-    public void updateAuction(Auction auction) { uow.getAuctionRepository().save(auction); }
-    public void deleteAuction(Long id) { uow.getAuctionRepository().deleteById(id); }
+    @Override
+    public void updateCategory(Category category) {
+        User currentUser = securityContext.getCurrentUser();
+        if (currentUser.getRole() != Role.ADMIN && currentUser.getRole() != Role.MANAGER) {
+            throw new UnauthorizedAccessException("Only ADMIN and MANAGER can update categories");
+        }
+        uow.getCategoryRepository().save(category);
+    }
 
-    // Bid
-    public void placeBid(Bid bid) { uow.getBidRepository().save(bid); }
-    public Bid getBidById(Long id) { return uow.getBidRepository().findById(id).orElse(null); }
-    public List<Bid> getAllBids() { return uow.getBidRepository().findAll(); }
+    @Override
+    public void deleteCategory(Long id) {
+        User currentUser = securityContext.getCurrentUser();
+        if (currentUser.getRole() != Role.ADMIN && currentUser.getRole() != Role.MANAGER) {
+            throw new UnauthorizedAccessException("Only ADMIN and MANAGER can delete categories");
+        }
+        uow.getCategoryRepository().deleteById(id);
+    }
+
+    // User operations
+    @Override
+    public void addUser(User user) {
+        uow.getUserRepository().save(user);
+    }
+
+    @Override
+    public User getUserById(Long id) {
+        return uow.getUserRepository().findById(id).orElse(null);
+    }
+
+    @Override
+    public List<User> getAllUsers() {
+        return uow.getUserRepository().findAll();
+    }
+
+    @Override
+    public void updateUser(User user) {
+        uow.getUserRepository().save(user);
+    }
+
+    @Override
+    public void deleteUser(Long id) {
+        User currentUser = securityContext.getCurrentUser();
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new UnauthorizedAccessException("Only ADMIN can delete users");
+        }
+        uow.getUserRepository().deleteById(id);
+    }
+
+    // Lot operations
+    @Override
+    public void addLot(Lot lot) {
+        User currentUser = securityContext.getCurrentUser();
+        if (currentUser.getRole() == Role.GUEST) {
+            throw new UnauthorizedAccessException("Guests cannot add lots");
+        }
+        uow.getLotRepository().save(lot);
+    }
+
+    @Override
+    public Lot getLotById(Long id) {
+        return uow.getLotRepository().findById(id).orElse(null);
+    }
+
+    @Override
+    public List<Lot> getAllLots() {
+        return uow.getLotRepository().findAll();
+    }
+
+    @Override
+    public void updateLot(Lot lot) {
+        User currentUser = securityContext.getCurrentUser();
+        if (currentUser.getRole() == Role.GUEST) {
+            throw new UnauthorizedAccessException("Guests cannot update lots");
+        }
+        uow.getLotRepository().save(lot);
+    }
+
+    @Override
+    public void deleteLot(Long id) {
+        User currentUser = securityContext.getCurrentUser();
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new UnauthorizedAccessException("Only ADMIN can delete lots");
+        }
+        uow.getLotRepository().deleteById(id);
+    }
+
+    // Auction operations
+    @Override
+    public void createAuction(Auction auction) {
+        User currentUser = securityContext.getCurrentUser();
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new UnauthorizedAccessException("Only ADMIN can create auctions");
+        }
+        uow.getAuctionRepository().save(auction);
+    }
+
+    @Override
+    public Auction getAuctionById(Long id) {
+        return uow.getAuctionRepository().findById(id).orElse(null);
+    }
+
+    @Override
+    public List<Auction> getAllAuctions() {
+        return uow.getAuctionRepository().findAll();
+    }
+
+    @Override
+    public void updateAuction(Auction auction) {
+        User currentUser = securityContext.getCurrentUser();
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new UnauthorizedAccessException("Only ADMIN can update auctions");
+        }
+        uow.getAuctionRepository().save(auction);
+    }
+
+    @Override
+    public void deleteAuction(Long id) {
+        User currentUser = securityContext.getCurrentUser();
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new UnauthorizedAccessException("Only ADMIN can delete auctions");
+        }
+        uow.getAuctionRepository().deleteById(id);
+    }
+
+    // Bid operations
+    @Override
+    public void placeBid(Bid bid) {
+        User currentUser = securityContext.getCurrentUser();
+        if (currentUser.getRole() != Role.REGISTERED) {
+            throw new UnauthorizedAccessException("Only REGISTERED users can place bids");
+        }
+
+        Auction auction = bid.getAuction();
+        if (auction == null || auction.isCompleted()) {
+            throw new IllegalStateException("Auction is not active");
+        }
+
+        List<Bid> auctionBids = getBidsByAuction(auction.getId());
+        double highestBid = auctionBids.stream()
+                .mapToDouble(Bid::getAmount)
+                .max()
+                .orElse(auction.getLot().getStartPrice().doubleValue());
+
+        if (bid.getAmount() <= highestBid) {
+            throw new IllegalArgumentException("Bid amount must be higher than current highest bid");
+        }
+
+        bid.setBidder(currentUser);
+        uow.getBidRepository().save(bid);
+
+        checkAndUpdateAuctionStatus(auction);
+    }
+
+    @Override
+    public Bid getBidById(Long id) {
+        return uow.getBidRepository().findById(id).orElse(null);
+    }
+
+    @Override
+    public List<Bid> getAllBids() {
+        return uow.getBidRepository().findAll();
+    }
+
+    @Override
     public List<Bid> getBidsByAuction(Long auctionId) {
         return uow.getBidRepository().findAll().stream()
                 .filter(b -> b.getAuction() != null && b.getAuction().getId().equals(auctionId))
                 .toList();
     }
-    public void deleteBid(Long id) { uow.getBidRepository().deleteById(id); }
+
+    @Override
+    public void deleteBid(Long id) {
+        User currentUser = securityContext.getCurrentUser();
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new UnauthorizedAccessException("Only ADMIN can delete bids");
+        }
+        uow.getBidRepository().deleteById(id);
+    }
+
+    // Helper method to check and update auction status
+    private void checkAndUpdateAuctionStatus(Auction auction) {
+        if (LocalDateTime.now().isAfter(auction.getEndTime())) {
+            auction.setCompleted(true);
+            auction.getLot().setConfirmed(true);
+            uow.getAuctionRepository().save(auction);
+            uow.getLotRepository().save(auction.getLot());
+        }
+    }
+
+    @Scheduled(fixedRate = 60000) // Run every minute
+    public void checkAndUpdateAllAuctionsStatus() {
+        List<Auction> activeAuctions = getAllAuctions().stream()
+                .filter(auction -> !auction.isCompleted())
+                .filter(auction -> auction.getEndTime().isBefore(LocalDateTime.now()))
+                .toList();
+
+        for (Auction auction : activeAuctions) {
+            List<Bid> bids = getBidsByAuction(auction.getId());
+            if (!bids.isEmpty()) {
+                Bid winningBid = bids.stream()
+                        .max(Comparator.comparingDouble(Bid::getAmount))
+                        .orElse(null);
+
+                if (winningBid != null) {
+                    auction.setCompleted(true);
+                    auction.getLot().setConfirmed(true);
+                    uow.getAuctionRepository().save(auction);
+                    uow.getLotRepository().save(auction.getLot());
+                }
+            }
+        }
+    }
 }

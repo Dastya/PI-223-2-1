@@ -17,7 +17,7 @@ public class Auction {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.MERGE)
     private Lot lot;
 
     private boolean completed;

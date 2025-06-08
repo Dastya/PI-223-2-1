@@ -1,5 +1,6 @@
 package com.auction.dto;
 
+import com.auction.model.Role;
 import lombok.*;
 
 @Data
@@ -8,5 +9,5 @@ import lombok.*;
 public class UserDTO {
     private Long id;
     private String username;
-    private String role;
+    private Role role;
 }

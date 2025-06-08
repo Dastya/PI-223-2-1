@@ -18,9 +18,9 @@ public class Bid {
     private double amount;
     private LocalDateTime time;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.MERGE)
     private Auction auction;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.MERGE)
     private User bidder;
 }

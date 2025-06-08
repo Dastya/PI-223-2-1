@@ -20,9 +20,9 @@ public class Lot {
     @Column(precision = 19, scale = 2)
     private BigDecimal startPrice;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.MERGE)
     private Category category;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.MERGE)
     private User owner;
 }
