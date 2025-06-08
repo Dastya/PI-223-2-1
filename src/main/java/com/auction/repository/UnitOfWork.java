@@ -5,6 +5,7 @@ import com.auction.repository.impl.GenericRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -13,6 +14,13 @@ public class UnitOfWork {
 
     @PersistenceContext
     private EntityManager entityManager;
+
+    @Autowired
+    public UnitOfWork(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
+
+    public UnitOfWork() {}
 
     public IGenericRepository<User, Long> getUserRepository() {
         return new GenericRepository<>(User.class, entityManager);
