@@ -2,6 +2,7 @@ package com.auction.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.math.BigDecimal;
 
 @Entity
 @Data
@@ -15,6 +16,9 @@ public class Lot {
     private String title;
     private String description;
     private boolean confirmed;
+    
+    @Column(precision = 19, scale = 2)
+    private BigDecimal startPrice;
 
     @ManyToOne
     private Category category;
