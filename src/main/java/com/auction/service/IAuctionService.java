@@ -38,4 +38,6 @@ public interface IAuctionService {
     List<Bid> getAllBids();
     List<Bid> getBidsByAuction(Long auctionId);
     void deleteBid(Long id);
+
+    User getUserByUsername(String username);
 }
