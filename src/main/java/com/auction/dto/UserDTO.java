@@ -1,13 +1,16 @@
 package com.auction.dto;
 
 import com.auction.model.Role;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 public class UserDTO {
     private Long id;
     private String username;
+    private String email;
     private Role role;
 }

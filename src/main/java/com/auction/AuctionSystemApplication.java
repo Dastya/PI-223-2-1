@@ -17,9 +17,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collections;
 
 @EnableScheduling
 @SpringBootApplication
@@ -73,27 +77,41 @@ public class AuctionSystemApplication {
     }
 
     private void initializeDemoData(IAuctionService auctionService, PasswordEncoder passwordEncoder) {
-        // users
-        User admin = createUser("admin", "admin123", Role.ADMIN, passwordEncoder);
-        User manager = createUser("manager", "manager123", Role.MANAGER, passwordEncoder);
-        User registeredUser = createUser("user", "user123", Role.REGISTERED, passwordEncoder);
-        
-        auctionService.addUser(admin);
-        auctionService.addUser(manager);
-        auctionService.addUser(registeredUser);
+        try {
+            // Create admin user first
+            User admin = createUser("admin", "admin123", Role.ADMIN, passwordEncoder);
+            auctionService.addUser(admin);
 
-        // categories
-        Category electronics = new Category();
-        electronics.setName("Electronics");
-        auctionService.addCategory(electronics);
+            // Set up security context with admin credentials
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                admin.getUsername(),
+                null,
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + admin.getRole()))
+            );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        Category books = new Category();
-        books.setName("Books");
-        auctionService.addCategory(books);
+            // Create other users
+            User manager = createUser("manager", "manager123", Role.MANAGER, passwordEncoder);
+            User registeredUser = createUser("user", "user123", Role.REGISTERED, passwordEncoder);
+            auctionService.addUser(manager);
+            auctionService.addUser(registeredUser);
 
-        // lots and auctions
-        createSampleLotAndAuction(auctionService, electronics, admin, "iPhone 14", "New, unopened", 1200.0);
-        createSampleLotAndAuction(auctionService, books, admin, "Rare Book Collection", "First editions", 500.0);
+            // Create categories
+            Category electronics = new Category();
+            electronics.setName("Electronics");
+            auctionService.addCategory(electronics);
+
+            Category books = new Category();
+            books.setName("Books");
+            auctionService.addCategory(books);
+
+            // Create lots and auctions
+            createSampleLotAndAuction(auctionService, electronics, admin, "iPhone 14", "New, unopened", 1200.0);
+            createSampleLotAndAuction(auctionService, books, admin, "Rare Book Collection", "First editions", 500.0);
+        } finally {
+            // Clear security context after initialization
+            SecurityContextHolder.clearContext();
+        }
     }
 
     private User createUser(String username, String password, Role role, PasswordEncoder passwordEncoder) {

@@ -252,4 +252,12 @@ public class AuctionService implements IAuctionService {
             }
         }
     }
+
+    @Override
+    public User getUserByUsername(String username) {
+        return uow.getUserRepository().findAll().stream()
+                .filter(user -> user.getUsername().equals(username))
+                .findFirst()
+                .orElse(null);
+    }
 }

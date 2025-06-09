@@ -88,6 +88,6 @@ public class UserController {
     }
 
     private UserDTO convertToDTO(User user) {
-        return new UserDTO(user.getId(), user.getUsername(), user.getRole());
+        return new UserDTO(user.getId(), user.getUsername(), user.getEmail(), user.getRole());
     }
 }
